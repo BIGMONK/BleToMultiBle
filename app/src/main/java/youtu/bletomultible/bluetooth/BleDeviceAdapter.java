@@ -1,3 +1,4 @@
+package youtu.bletomultible.bluetooth;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
@@ -15,10 +16,10 @@ import youtu.bletomultible.R;
  * Created by djf on 2017/3/17.
  */
 
-public class BleDeviceAdapter extends RecyclerView.Adapter< BleDeviceAdapterHolder> {
+public class BleDeviceAdapter extends RecyclerView.Adapter<BleDeviceAdapterHolder> {
 
     private Context mContext;
-    private HashMap<String,  BleDeviceBean> datas;
+    private HashMap<String, BleDeviceBean> datas;
     private List< BleDeviceBean> list;
 
     public BleDeviceAdapter(Context mContext, HashMap<String,  BleDeviceBean> datas) {

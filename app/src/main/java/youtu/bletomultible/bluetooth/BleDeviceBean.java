@@ -3,8 +3,6 @@ package youtu.bletomultible.bluetooth;
 import java.io.Serializable;
 import java.util.UUID;
 
-import youtu.bletomultible.utils.ByteUtils;
-
 /**
  * Created by djf on 2017/3/17.
  */
@@ -16,9 +14,9 @@ public class BleDeviceBean implements Serializable {
     private UUID serviceUUID;
     private UUID notifyUUID;
     private UUID sendUUID;
-    private UUID configUUID =  SampleGattAttributes.CLIENT_CHARACTERISTIC_CONFIG;
+    private UUID configUUID = SampleGattAttributes.CLIENT_CHARACTERISTIC_CONFIG;
     private byte[] values;
-    private int state = 0;
+    private int state;
 
     public int getState() {
         return state;
@@ -29,51 +27,41 @@ public class BleDeviceBean implements Serializable {
     }
 
     public String getValues() {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         if (values != null) {
             for (int i = 0; i < values.length; i++) {
-                sb.append(ByteUtils.int2HexString(values[i]) + "    ");
+                sb.append(values[i] + "    ");
             }
         }
 
         return sb.toString();
-        //        if (values != null)
-        //            return ByteUtils.getHexString(values);
-        //        else return "null";
     }
 
     public void setValues(byte[] values) {
         this.values = values;
     }
 
-
-    /**
-     *
-     * @param name 设备名称
-     * @param mac 设备mac
-     * @param type 设备类型 1  手环   2  主控板   3 计步器   4  三角心率计
-
-     */
+//    //1  手环   2  主控板   3 计步器   4  三角心率计
     public BleDeviceBean(String name, String mac, int type) {
         this.name = name;
         this.mac = mac;
         this.type = type;
-        if (type ==  SampleGattAttributes.HAND_BAND) {  //手环
-            this.serviceUUID =  SampleGattAttributes.HAND_BAND_SERVICE_UUID;
-            this.notifyUUID =  SampleGattAttributes.HAND_BAND_RECEIVE_UUID;
-            this.sendUUID =  SampleGattAttributes.HAND_BAND_SEND_UUID;
-        } else if (type ==  SampleGattAttributes.MAINBOARD) {//主板
-            this.serviceUUID =  SampleGattAttributes.MAINBOARD_SERVICE_UUID;
-            this.notifyUUID =  SampleGattAttributes.MAINBOARD_RECEIVE_UUID;
-            this.sendUUID =  SampleGattAttributes.MAINBOARD_SEND_UUID;
-        } else if (type ==  SampleGattAttributes.STEPER) {//计步器
-            this.serviceUUID =  SampleGattAttributes.STEPER_SERVICE_UUID;
-            this.notifyUUID =  SampleGattAttributes.STEPER_RECEIVE_UUID;
-            this.sendUUID =  SampleGattAttributes.STEPER_SEND_UUID;
-        } else if (type ==  SampleGattAttributes.HRM) {//心率计
-            this.serviceUUID =  SampleGattAttributes.HRM_SERVICE_UUID;
-            this.notifyUUID =  SampleGattAttributes.HRM_RECEIVE_UUID;
-            this.sendUUID =  SampleGattAttributes.HRM_SEND_UUID;
+        if (type == SampleGattAttributes.HAND_BAND) {  //手环
+            this.serviceUUID = SampleGattAttributes.HAND_BAND_SERVICE_UUID;
+            this.notifyUUID = SampleGattAttributes.HAND_BAND_RECEIVE_UUID;
+            this.sendUUID = SampleGattAttributes.HAND_BAND_SEND_UUID;
+        } else if (type == SampleGattAttributes.MAINBOARD) {//主板
+            this.serviceUUID = SampleGattAttributes.MAINBOARD_SERVICE_UUID;
+            this.notifyUUID = SampleGattAttributes.MAINBOARD_RECEIVE_UUID;
+            this.sendUUID = SampleGattAttributes.MAINBOARD_SEND_UUID;
+        } else if (type == SampleGattAttributes.STEPER) {//计步器
+            this.serviceUUID = SampleGattAttributes.STEPER_SERVICE_UUID;
+            this.notifyUUID = SampleGattAttributes.STEPER_RECEIVE_UUID;
+            this.sendUUID = SampleGattAttributes.STEPER_SEND_UUID;
+        } else if (type == SampleGattAttributes.HRM) {//心率计
+            this.serviceUUID = SampleGattAttributes.HRM_SERVICE_UUID;
+            this.notifyUUID = SampleGattAttributes.HRM_RECEIVE_UUID;
+            this.sendUUID = SampleGattAttributes.HRM_SEND_UUID;
         }
     }
 
