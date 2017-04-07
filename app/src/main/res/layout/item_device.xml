@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="name" />
+
+    <TextView
+        android:id="@+id/mac"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="mac" />
+
+    <TextView
+        android:id="@+id/type"
+        android:layout_width="match_parent"
+
+        android:layout_height="wrap_content"
+        android:text="type" />
+
+    <TextView
+        android:id="@+id/serviceUUID"
+        android:layout_width="match_parent"
+
+        android:layout_height="wrap_content"
+        android:text="serviceUUID" />
+
+    <TextView
+        android:id="@+id/notifyUUID"
+        android:layout_width="match_parent"
+
+        android:layout_height="wrap_content"
+        android:text="notifyUUID" />
+
+    <TextView
+        android:id="@+id/sendUUID"
+        android:layout_width="match_parent"
+
+        android:layout_height="wrap_content"
+        android:text="sendUUID" />
+
+    <TextView
+        android:id="@+id/configUUID"
+        android:layout_width="match_parent"
+
+        android:layout_height="wrap_content"
+        android:text="configUUID" />
+
+    <TextView
+        android:id="@+id/values"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="values" />
+
+    <TextView
+        android:id="@+id/state"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="state" />
+
+</LinearLayout>
