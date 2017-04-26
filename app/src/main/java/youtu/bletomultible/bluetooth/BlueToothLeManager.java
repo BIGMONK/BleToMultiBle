@@ -264,15 +264,16 @@ public class BlueToothLeManager extends Thread implements
         }
         if (mDataValuesChangedListener != null) {
             //TODO 限制心率计更新频率
-            if (devicesMap.get(add).getType() == SampleGattAttributes.HRM) {
-                currentTime = System.currentTimeMillis();
-                if (currentTime - lastTime < 2000) {
-                    return;
-                } else {
-                    mDataValuesChangedListener.onDataValuesChanged(add, value);
-                    lastTime = currentTime;
-                }
-            } else {
+//            if (devicesMap.get(add).getType() == SampleGattAttributes.HRM) {
+//                currentTime = System.currentTimeMillis();
+//                if (currentTime - lastTime < 2000) {
+//                    return;
+//                } else {
+//                    mDataValuesChangedListener.onDataValuesChanged(add, value);
+//                    lastTime = currentTime;
+//                }
+//            } else
+        {
                 mDataValuesChangedListener.onDataValuesChanged(add, value);
             }
         }
