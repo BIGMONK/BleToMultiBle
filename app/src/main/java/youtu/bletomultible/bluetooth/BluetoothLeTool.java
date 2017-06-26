@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import youtu.bletomultible.bluetooth.hrm.IBleOperateCallback;
+import youtu.bletomultible.utils.LogUtils;
 import youtu.bletomultible.utils.UIUtils;
 
 
@@ -53,7 +53,7 @@ public class BluetoothLeTool implements BluetoothStatus {
     private ArrayList<String> abandonList;
 
     public void upBluetoothLeTool(Map<String, BleDeviceBean> mDeviceMap) {
-        Log.d(TAG, "upBluetoothLeTool");
+        LogUtils.d(TAG,"upBluetoothLeTool");
         abandonList.clear();
         mBleAddress.clear();
         //废弃不用的
@@ -61,7 +61,8 @@ public class BluetoothLeTool implements BluetoothStatus {
             if (!mDeviceMap.containsKey(add)) {
                 abandonList.add(add);
                 mBluetoothGattMap.get(add).disconnect();
-                Log.d(TAG, "upBluetoothLeTool disconnect:" + add);
+                mConnectionStateMap.remove(add);
+                LogUtils.d(TAG,"upBluetoothLeTool disconnect:"+add);
             }
         }
         //增加新来的
@@ -113,8 +114,7 @@ public class BluetoothLeTool implements BluetoothStatus {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             String add = gatt.getDevice().getAddress();
-            Log.i(TAG, "BluetoothGattCallback onConnectionStateChange add=" + add + "  state=" +
-                    newState);
+            Log.i(TAG, "BluetoothGattCallback onConnectionStateChange add=" + add + "  state=" + newState);
             if (!abandonList.contains(add)) {
                 mConnectionStateMap.put(add, newState);
 
@@ -130,8 +130,7 @@ public class BluetoothLeTool implements BluetoothStatus {
                 }
                 mBluetoothLeStatusListener.onBlueToothConnectState(add, newState);
             } else {
-                Log.i(TAG, "BluetoothGattCallback onConnectionStateChange 已废弃add=" + add + "  " +
-                        "state=" + newState);
+                Log.i(TAG, "BluetoothGattCallback onConnectionStateChange 已废弃add=" + add + "  state=" + newState);
             }
         }
 
@@ -163,28 +162,20 @@ public class BluetoothLeTool implements BluetoothStatus {
 
         }
 
-        IBleOperateCallback mBleOperateCallback;
-
-        public void setBleOperate(IBleOperateCallback mBleOperate) {
-            this.mBleOperateCallback = mBleOperate;
-        }
 
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt,
                                             BluetoothGattCharacteristic characteristic) {
             final byte[] data = characteristic.getValue();
             String add = gatt.getDevice().getAddress();
-
-
             if (mBluetoothLeDataListener != null && !abandonList.contains(add)) {
-                    mBluetoothLeDataListener.onDataAvailable(add, data);
+                mBluetoothLeDataListener.onDataAvailable(add, data);
             }
 
         }
 
         @Override
-        public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic
-                characteristic, int status) {
+        public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
 
             if (status == BluetoothGatt.GATT_SUCCESS) {
 
@@ -195,8 +186,7 @@ public class BluetoothLeTool implements BluetoothStatus {
         }
 
         @Override
-        public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int
-                status) {
+        public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
             super.onDescriptorRead(gatt, descriptor, status);
             Log.d(TAG, "onDescriptorRead :" + descriptor.getUuid());
         }
@@ -219,8 +209,7 @@ public class BluetoothLeTool implements BluetoothStatus {
         // For API level 18 and above, get a reference to BluetoothAdapter through
         // BluetoothManager.
         if (mBluetoothManager == null) {
-            mBluetoothManager = (BluetoothManager) UIUtils.getContext().getSystemService(Context
-                    .BLUETOOTH_SERVICE);
+            mBluetoothManager = (BluetoothManager) UIUtils.getContext().getSystemService(Context.BLUETOOTH_SERVICE);
             if (mBluetoothManager == null) {
                 Log.e(TAG, "Unable to initialize BluetoothManager.");
                 return false;
@@ -259,8 +248,7 @@ public class BluetoothLeTool implements BluetoothStatus {
             Log.w(TAG, "Device not found.  Unable to connect.");
             return false;
         }
-        mBluetoothGattMap.put(address, device.connectGatt(UIUtils.getContext(), false,
-                mGattCallback));
+        mBluetoothGattMap.put(address, device.connectGatt(UIUtils.getContext(), false, mGattCallback));
         Log.d(TAG, "Trying to create a new connection.");
         mBluetoothLeStatusListener.onBlueToothConnectState(address, STATE_CONNECTING);
         return true;
@@ -285,8 +273,7 @@ public class BluetoothLeTool implements BluetoothStatus {
 
     }
 
-    public synchronized void readCharacteristic(String add, BluetoothGattCharacteristic
-            characteristic) {
+    public synchronized void readCharacteristic(String add, BluetoothGattCharacteristic characteristic) {
         if (mBluetoothAdapter == null || mBluetoothGattMap.get(add) == null) {
             Log.w(TAG, "BluetoothAdapter not initialized  " + add);
             return;
@@ -294,8 +281,8 @@ public class BluetoothLeTool implements BluetoothStatus {
         mBluetoothGattMap.get(add).readCharacteristic(characteristic);
     }
 
-    public synchronized void writeCharacteristic(String add, BluetoothGattCharacteristic
-            characteristic) {
+    public synchronized void writeCharacteristic(String add, BluetoothGattCharacteristic characteristic) {
+        LogUtils.d(TAG,"writeCharacteristic  add="+add);
         if (mBluetoothAdapter == null || mBluetoothGattMap.get(add) == null) {
             Log.w(TAG, "BluetoothAdapter not initialized  " + add);
             return;
@@ -303,12 +290,8 @@ public class BluetoothLeTool implements BluetoothStatus {
         mBluetoothGattMap.get(add).writeCharacteristic(characteristic);
     }
 
-    public synchronized boolean setCharacteristicNotification(String add,
-                                                              BluetoothGattCharacteristic
-                                                                      characteristic, boolean
-                                                                      enabled) {
-        if (mBluetoothAdapter == null || mBluetoothGattMap.get(add) == null || characteristic ==
-                null) {
+    public synchronized boolean setCharacteristicNotification(String add, BluetoothGattCharacteristic characteristic, boolean enabled) {
+        if (mBluetoothAdapter == null || mBluetoothGattMap.get(add) == null || characteristic == null) {
             Log.w(TAG, "BluetoothAdapter not initialized  " + add);
             return false;
         }
@@ -317,16 +300,14 @@ public class BluetoothLeTool implements BluetoothStatus {
             return false;
         }
 
-        BluetoothGattDescriptor descriptor = characteristic.getDescriptor((SampleGattAttributes
-                .CLIENT_CHARACTERISTIC_CONFIG));
+        BluetoothGattDescriptor descriptor = characteristic.getDescriptor((SampleGattAttributes.CLIENT_CHARACTERISTIC_CONFIG));
 
         if (descriptor == null) {
             Log.d(TAG, String.format("getDescriptor for notify null! " + add));
             return false;
         }
 
-        byte[] value = (enabled ? BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE :
-                BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
+        byte[] value = (enabled ? BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE : BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
 
         if (!descriptor.setValue(value)) {
             Log.d(TAG, String.format("setValue for notify descriptor failed! " + add));

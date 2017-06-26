@@ -17,8 +17,8 @@ public class SampleGattAttributes {
     public static int HRM = 4;
     public static String HAND_BAND_NAME = "手环";
     public static String MAINBOARD_NAME = "主控板";
-    public static String HRM_NAME = "计步器";
-    public static String STEPER_NAME = "三角心率计";
+    public static String STEPER_NAME = "计步器";
+    public static String HRM_NAME = "三角心率计";
 
     //通用参数
     public static UUID CLIENT_CHARACTERISTIC_CONFIG = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");

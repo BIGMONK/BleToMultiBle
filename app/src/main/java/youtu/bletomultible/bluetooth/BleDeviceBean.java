@@ -92,6 +92,10 @@ public class BleDeviceBean implements Serializable {
         this.mac = mac;
     }
 
+    /**
+     * //1  手环   2  主控板   3 计步器   4  三角心率计
+     * @return
+     */
     public int getType() {
         return type;
     }

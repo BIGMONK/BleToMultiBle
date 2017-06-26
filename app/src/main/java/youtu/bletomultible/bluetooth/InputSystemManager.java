@@ -4,16 +4,18 @@ import android.content.Context;
 import android.util.Log;
 import android.view.GestureDetector;
 
-
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+
+import youtu.bletomultible.utils.LogUtils;
 
 /**
  * Created by liuenbao on 1/23/16.
  */
 public class InputSystemManager extends GestureDetector.SimpleOnGestureListener
-        implements BlueToothLeManager.BlueToothConnectStateChangedListener, BlueToothLeManager.DataValuesChangedListener {
+        implements BlueToothLeManager.BlueToothConnectStateChangedListener, BlueToothLeManager
+        .DataValuesChangedListener {
 
     private String TAG = InputSystemManager.class.getSimpleName();
 
@@ -45,8 +47,8 @@ public class InputSystemManager extends GestureDetector.SimpleOnGestureListener
         return instance;
     }
 
-    public void startScanBle(){
-        if (instance!=null&&mBlueToothLeManager!=null){
+    public void startScanBle() {
+        if (instance != null && mBlueToothLeManager != null) {
             mBlueToothLeManager.startScanBle();
         }
     }
@@ -71,24 +73,27 @@ public class InputSystemManager extends GestureDetector.SimpleOnGestureListener
 
 //    private BlueToothDataValuesChangedListener mBlueToothDataValuesChangedListener;
 //
-//    public void setBlueToothDataValuesChangedListener(BlueToothDataValuesChangedListener listener) {
+//    public void setBlueToothDataValuesChangedListener(BlueToothDataValuesChangedListener
+// listener) {
 //        mBlueToothDataValuesChangedListener = listener;
 //    }
 
     private List<BlueToothDataValuesChangedListener> mBlueToothDataValuesChangedListeners;
 
-    public void registerBlueToothDataValuesChangedListener(BlueToothDataValuesChangedListener listener) {
+    public void registerBlueToothDataValuesChangedListener(BlueToothDataValuesChangedListener
+                                                                   listener) {
         mBlueToothDataValuesChangedListeners.add(listener);
     }
 
-    public void unRegisterBlueToothDataValuesChangedListener(BlueToothDataValuesChangedListener listener) {
+    public void unRegisterBlueToothDataValuesChangedListener(BlueToothDataValuesChangedListener
+                                                                     listener) {
         mBlueToothDataValuesChangedListeners.remove(listener);
     }
 
 
     //注意，此处的Context一定是Activity的context
     public boolean initWithContext(Context context, HashMap<String, BleDeviceBean> devicesMap) {
-
+        LogUtils.d(TAG,"initWithContext ");
         //这里的context只能是Activity的context
         this.mContext = context;
         this.devicesMap = devicesMap;
@@ -131,6 +136,19 @@ public class InputSystemManager extends GestureDetector.SimpleOnGestureListener
 
     }
 
+    public synchronized void sendData(int flag, String data) {
+        LogUtils.d(TAG, "sendData  flag=" + flag + " data=" + data);
+        if (mBlueToothLeManager != null) {
+            for (String add : devicesMap.keySet()) {
+                if (flag == devicesMap.get(add).getType()) {
+                    mBlueToothLeManager.sendData(add, data);
+                    break;
+                }
+            }
+        }
+
+    }
+
     public synchronized void sendData(String add, String data) {
         if (mBlueToothLeManager != null) {
             mBlueToothLeManager.sendData(add, data);
@@ -157,13 +175,15 @@ public class InputSystemManager extends GestureDetector.SimpleOnGestureListener
     @Override
     public void onBlueToothConnectState(String add, int state) {
         if (devicesMap.containsKey(add)) {
-            if (!(devicesMap.get(add).getType() == SampleGattAttributes.HAND_BAND&&state==BluetoothStatus.STATE_SEND_AND_NOTIFY_READY)) {
-                mBlueToothConnectStateEvevtListener.onBlueToothConnectStateChanged(devicesMap.get(add).getType(), add, state);
+            if (!(devicesMap.get(add).getType() == SampleGattAttributes.HAND_BAND && state ==
+                    BluetoothStatus.STATE_SEND_AND_NOTIFY_READY)) {
+                mBlueToothConnectStateEvevtListener.onBlueToothConnectStateChanged(devicesMap.get
+                        (add).getType(), add, state);
             }
             //断开重连
             if (state == BluetoothStatus.STATE_DISCONNECTED) {
-                if (devicesMap.get(add).getType()==SampleGattAttributes.HAND_BAND){
-                    isFirstUpdateTime=false;
+                if (devicesMap.get(add).getType() == SampleGattAttributes.HAND_BAND) {
+                    isFirstUpdateTime = false;
                 }
                 if (!instance.reConnectBlueTooth(add)) {
                     initWithContext(mContext, devicesMap);
@@ -181,20 +201,24 @@ public class InputSystemManager extends GestureDetector.SimpleOnGestureListener
     @Override
     public void onDataValuesChanged(String add, byte[] values) {
 //        if (mBlueToothDataValuesChangedListener!=null)
-//        mBlueToothDataValuesChangedListener.onBlueToothDataValuesChanged(devicesType.get(add), add, values);
+//        mBlueToothDataValuesChangedListener.onBlueToothDataValuesChanged(devicesType.get(add),
+// add, values);
 
         if (mBlueToothDataValuesChangedListeners != null) {
-            for (BlueToothDataValuesChangedListener listener : mBlueToothDataValuesChangedListeners) {
+            for (BlueToothDataValuesChangedListener listener :
+                    mBlueToothDataValuesChangedListeners) {
                 listener.onBlueToothDataValuesChanged(devicesType.get(add), add, values);
             }
             //同步手环时间
-            if (devicesMap.get(add) != null && devicesMap.get(add).getType() == SampleGattAttributes.HAND_BAND && !isFirstUpdateTime) {
+            if (devicesMap.get(add) != null && devicesMap.get(add).getType() ==
+                    SampleGattAttributes.HAND_BAND && !isFirstUpdateTime) {
                 isFirstUpdateTime = true;
                 devicesMap.get(add).setState(BluetoothStatus.STATE_SEND_AND_NOTIFY_READY);
                 sendData(add, SampleGattAttributes.getHandBandTimeData());
-                Log.d(TAG, "onBlueToothConnectState同步手环时间::" + "   " + add);
+                LogUtils.d(TAG, "onBlueToothConnectState同步手环时间::" + "   " + add);
                 //更新手环连接状态为就绪
-                mBlueToothConnectStateEvevtListener.onBlueToothConnectStateChanged(devicesMap.get(add).getType(),
+                mBlueToothConnectStateEvevtListener.onBlueToothConnectStateChanged(devicesMap.get
+                        (add).getType(),
                         add, BluetoothStatus.STATE_SEND_AND_NOTIFY_READY);
             }
         }

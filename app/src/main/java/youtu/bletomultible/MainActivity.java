@@ -1,10 +1,11 @@
 package youtu.bletomultible;
 
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.os.SystemClock;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -19,7 +20,12 @@ import android.widget.Toast;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -33,13 +39,14 @@ import youtu.bletomultible.bluetooth.hrm.HandleBleData;
 import youtu.bletomultible.bluetooth.hrm.IBleOperateCallback;
 import youtu.bletomultible.bluetooth.hrm.IUpdateCallBack;
 import youtu.bletomultible.bluetooth.hrm.SmctConstant;
+import youtu.bletomultible.utils.LogUtils;
 
 public class MainActivity extends AppCompatActivity implements InputSystemManager
         .BlueToothDataValuesChangedListener,
         InputSystemManager.BlueToothConnectStateEvevtListener, IBleOperateCallback {
     private HashMap<String, BleDeviceBean> devicesMap = new HashMap<>();
-    private String mainBoardMac;
     private InputSystemManager inputSystemManager;
+
     private String TAG = this.getClass().getSimpleName();
     @BindView(R.id.devicesList)
     RecyclerView devicesRecyclerView;
@@ -74,21 +81,45 @@ public class MainActivity extends AppCompatActivity implements InputSystemManage
     Button btn_set_data;
     @BindView(R.id.btn_reset)
     Button btn_reset;
+    @BindView(R.id.btn_select)
+    Button btn_select;
+    @BindView(R.id.picker)
+    PickerView pickerView;
+    @BindView(R.id.progress)
+    TextView progress;
+    private int appAddr = 0x3400;
+    private String appAddrpName = "update/a.bin";
+    private boolean waiting;
+    int hardVersion = 1;
+    int softVersion = 1;
+    private int sendCount;
+    private int sentCount;
+    private long startTime;
+    private SimpleDateFormat sdf;
+    private int fileByteLength = 1;
+    private String mainBoardMac;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        ButterKnife.bind(this);
-        devicesMap = new HashMap<>();
-        //1  手环   2  主控板   3 计步器   4  三角心率计
-//        mainBoardMac = "D8:B0:4C:BA:CB:0F";
-//        BleDeviceBean ble2 = new BleDeviceBean("蓝牙设备", mainBoardMac, 2);
-//        devicesMap.put(mainBoardMac, ble2);
 
-        String hrmMac="98:7B:F3:C4:D5:7E";
-        BleDeviceBean ble4 = new BleDeviceBean("蓝牙设备", hrmMac, 4);
-        devicesMap.put(hrmMac, ble4);
+        sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+        sdf.setTimeZone(TimeZone.getTimeZone("GMT+00:00"));
+
+        View view = View.inflate(this, R.layout.activity_main, null);
+
+        setContentView(view);
+        ButterKnife.bind(this);
+        devicesMap = (HashMap<String, BleDeviceBean>) getIntent().getSerializableExtra("deviceMap");
+
+        devicesMap = new HashMap<>();
+        mainBoardMac = getIntent().getStringExtra("address");
+        String mDevicesName = getIntent().getStringExtra("name");
+        int type = getIntent().getIntExtra("type", 1);
+
+        LogUtils.d(TAG, "add=" + mainBoardMac + "  name=" + mDevicesName + "  type=" + type);
+        BleDeviceBean ble2 = new BleDeviceBean(mDevicesName, mainBoardMac, type);
+        devicesMap.put(mainBoardMac, ble2);
 
         inputSystemManager = InputSystemManager.getInstance();
         inputSystemManager.registerBlueToothDataValuesChangedListener(this);
@@ -101,6 +132,23 @@ public class MainActivity extends AppCompatActivity implements InputSystemManage
         devicesRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         //设置Adapter
         devicesRecyclerView.setAdapter(adapter);
+
+        List<Integer> data = new ArrayList<Integer>();
+        for (int i = 0; i <= 10; i++) {
+            data.add(i);
+        }
+
+        pickerView.setData(data);
+        pickerView.setOnSelectListener(new PickerView.onSelectListener() {
+            @Override
+            public void onSelect(Integer text) {
+                Toast.makeText(MainActivity.this, "选择了: " + text,
+                        Toast.LENGTH_SHORT).show();
+                hardVersion = text;
+                softVersion = text;
+            }
+        });
+
     }
 
     @Override
@@ -114,7 +162,6 @@ public class MainActivity extends AppCompatActivity implements InputSystemManage
     @Override
     public void onBlueToothDataValuesChanged(int type, String add, byte[] values) {
 
-
         StringBuilder stringBuilder = new StringBuilder();
         if (values == null) {
             return;
@@ -122,8 +169,8 @@ public class MainActivity extends AppCompatActivity implements InputSystemManage
         for (int h = 0; h < values.length; h++) {
             stringBuilder.append(values[h] + "    ");
         }
-        Log.d(TAG,  "DataValuesChanged："+add +"type="+type +"  "+ values.length
-                + "  数据："+ stringBuilder.toString());
+        Log.d(TAG, "DataValuesChanged：" + add + "type=" + type + "   " + values.length
+                + "  数据：" + stringBuilder.toString());
 
         if (type == SampleGattAttributes.MAINBOARD && values.length == 9 && values[0] == 0x55 &&
                 values[8] == (byte) 0xAA) {//主控板数据
@@ -141,6 +188,9 @@ public class MainActivity extends AppCompatActivity implements InputSystemManage
                     //0x55 0xFF 0x4F 0x4B 0x00 0x00 0x00 0x00 0xAA
                     if (values[2] == 0x4F && values[3] == 0x4B) {
                         bundle.putString("msg", "设置指令成功");
+                        if (waiting) {
+                            handler.sendEmptyMessageDelayed(555, 20);
+                        }
                     }
                     //4 设置指令错误
                     // 0x55 0xFF 0x45 0x52 0x52 0x00 0x00 0x00 0xAA
@@ -162,9 +212,9 @@ public class MainActivity extends AppCompatActivity implements InputSystemManage
                 }
                 message.setData(bundle);
                 message.what = 666;
-                handler.sendMessage(message);
                 devicesMap.get(add).setValues(values);
-                handler.sendEmptyMessage(999);
+                handler.sendMessage(message);
+
             }
 
         } else if (type == SampleGattAttributes.HAND_BAND && values[6] == 3) {   //手环就绪
@@ -172,7 +222,7 @@ public class MainActivity extends AppCompatActivity implements InputSystemManage
                     -1, (byte) 49, (byte) 0x0a, (byte) 1});
         } else if (type == SampleGattAttributes.HRM) {//心率计
             //TODO 处理心率计数据
-
+            Log.d(TAG, "心率计有数据");
             HandleBleData.HandleData(values, this, (IUpdateCallBack) null);
         }
 
@@ -195,7 +245,7 @@ public class MainActivity extends AppCompatActivity implements InputSystemManage
     @OnClick({R.id.btn_add_data, R.id.btn_clear_data, R.id.btn_send_data, R.id.btn_start_update,
             R.id.btn_get_soft_version, R.id.btn_get_hard_version, R.id.btn_set_soft_version,
             R.id.btn_set_hard_version, R.id.btn_set_app_addr, R.id.btn_set_file_length,
-            R.id.btn_set_data, R.id.btn_reset
+            R.id.btn_set_data, R.id.btn_reset, R.id.btn_select
     })
     public void Onclick(View view) {
         switch (view.getId()) {
@@ -218,6 +268,45 @@ public class MainActivity extends AppCompatActivity implements InputSystemManage
                 inputSystemManager.sendData(mainBoardMac,
                         MainBoardCommand.START_UPDATE);
                 break;
+
+            case R.id.btn_select:
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle("升级程序选择：");
+                try {
+                    String[] files = getAssets().list("update");
+
+                    final String[] choice = new String[files.length];
+                    for (int i = 0; i < choice.length; i++) {
+                        choice[i] = "update/" + files[i];
+                    }
+                    builder.setSingleChoiceItems(choice, 0,
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+
+                                    appAddrpName = choice[which];
+                                    btn_select.setText("选择固件：" + appAddrpName);
+                                    if (choice[which].contains("A")) {
+                                        appAddr = 0x3400;
+                                    } else {
+                                        appAddr = 0x9800;
+                                    }
+                                    LogUtils.d(TAG, "setSingleChoiceItems which=" + which + "   " +
+                                            "appAddr=0x" + Integer.toHexString(appAddr));
+
+                                    dialog.dismiss(); // 让窗口消失
+
+                                }
+                            }
+
+                    );
+                    builder.create().show();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+
+                break;
             // 8 获取软件版本号
             case R.id.btn_get_soft_version:
                 inputSystemManager.sendData(mainBoardMac,
@@ -231,17 +320,29 @@ public class MainActivity extends AppCompatActivity implements InputSystemManage
             //  2 设置软件版本号
             case R.id.btn_set_soft_version:
                 inputSystemManager.sendData(mainBoardMac,
-                        MainBoardCommand.makeSoftVersion(128));
+                        MainBoardCommand.makeSoftVersion(softVersion));
+                Toast.makeText(this, "设置软件版本号：" + softVersion, Toast
+                        .LENGTH_SHORT).show();
+                btn_set_soft_version.setText("设置软件版本号：" + softVersion);
                 break;
             // 3 设置硬件版本号
             case R.id.btn_set_hard_version:
-                inputSystemManager.sendData(mainBoardMac, MainBoardCommand.makeHardVersion(2));
+                inputSystemManager.sendData(mainBoardMac, MainBoardCommand.makeHardVersion
+                        (hardVersion));
+                Toast.makeText(this, "设置硬件版本号：" + hardVersion, Toast
+                        .LENGTH_SHORT).show();
+                btn_set_hard_version.setText("设置硬件版本号：" + softVersion);
+
                 break;
             //   4 app_addr
             // 0xAA 0x13 0x00 0x00 0x00 0x00 0x00 0x00 0x55 （app_addr（0x3400或者0x9800）高位在前，低位在后）
             case R.id.btn_set_app_addr:
                 inputSystemManager.sendData(mainBoardMac,
-                        MainBoardCommand.makeAppAddress(0x9800));
+                        MainBoardCommand.makeAppAddress(appAddr));
+                LogUtils.d(TAG, "升级设置地址：0x" + Integer.toHexString(appAddr));
+                Toast.makeText(this, "升级设置地址：0x" + Integer.toHexString(appAddr), Toast
+                        .LENGTH_SHORT).show();
+                btn_set_app_addr.setText("升级设置地址:" + Integer.toHexString(appAddr));
                 break;
             //  5 文件长度
             //  0xAA 0x14 0x00 0x00 0x00 0x00 0x00 0x00 0x55 （文件长度，字节数/2，高位在前，低位在后）
@@ -250,10 +351,13 @@ public class MainActivity extends AppCompatActivity implements InputSystemManage
                 //new byte[]{(byte) 0xAA, (byte) 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x55});
                 InputStream input = null;
                 try {
-//                    input = getResources().getAssets().open("master_control_B.bin");
-                    input = getResources().getAssets().open("ctr_min_test_V1.1.hex");
+                    if (TextUtils.isEmpty(appAddrpName)) {
+                        Toast.makeText(this, "未选中升级程序", Toast.LENGTH_SHORT).show();
+                        break;
+                    }
+                    input = getResources().getAssets().open(appAddrpName);
                     BufferedInputStream bis = new BufferedInputStream(input);
-                    int fileByteLength = bis.available() / 2 + bis.available() % 2;
+                    fileByteLength = bis.available() / 2 + bis.available() % 2;
                     Log.d(TAG, "LLLLLLL实际字节数=" + bis.available() +
                             "LLLLLLL除以2发送次数（每次两位）=" + fileByteLength +
                             "LLLLLLL高位=" + (byte) (fileByteLength / 256) +
@@ -261,10 +365,16 @@ public class MainActivity extends AppCompatActivity implements InputSystemManage
 
                     inputSystemManager.sendData(mainBoardMac, MainBoardCommand.makeFileLength
                             (fileByteLength));
+                    Toast.makeText(this, "升级文件长度：" + bis.available() + "  发送次数：" +
+                            fileByteLength, Toast.LENGTH_SHORT).show();
+                    btn_set_file_length.setText("文件长度：" + bis.available() + "  发送次数：" +
+                            fileByteLength);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
                 break;
+
+
             //  6 data写入升级包
 
             case R.id.btn_set_data:
@@ -329,79 +439,88 @@ public class MainActivity extends AppCompatActivity implements InputSystemManage
                     if (colorIndex == 4) {
                         colorIndex = 0;
                     }
+                    adapter.notifyDataSetChanged();
                     break;
                 case 999:
                     adapter.notifyDataSetChanged();
-                    devicesRecyclerView.setBackgroundColor(colors[recColorInde]);
-                    recColorInde++;
-                    if (recColorInde == 4) {
-                        recColorInde = 0;
+                    break;
+                case 555:
+                    synchronized (MainActivity.class) {
+                        sentCount++;
+                        if (waiting) {
+                            progress.setText("升级进度：" + (sendCount * 1f / fileByteLength) + "  " +
+                                    "耗时：" + sdf.format(-startTime + System.currentTimeMillis()));
+                        }
+                        waiting = false;
+                        MainActivity.class.notify();
                     }
                     break;
+
             }
 
         }
     };
 
-
-    public void write4Bytes(byte[] bytes) {
-        if (bytes.length < 4) {
-            Log.d(TAG, "write3Bytes err");
-            return;
-        }
-        inputSystemManager.sendData(mainBoardMac,
-                new byte[]{(byte) 0xAA, 0x21, bytes[0], bytes[1],
-                        bytes[2], bytes[3], 0x00, 0x00, 0x55});
-    }
 
     boolean isRunableRunning;
     Runnable runable = new Runnable() {
         @Override
         public void run() {
-            isRunableRunning = true;
-            try {
-//                InputStream input = getResources().getAssets().open("master_control_B.bin");
-                InputStream input = getResources().getAssets().open("ctr_min_test_V1.1.hex");
-                BufferedInputStream bis = new BufferedInputStream(input);
-                int fileByteLength = bis.available();
-                if (bis != null) {
-                    byte[] bs = new byte[fileByteLength];
-                    bis.read(bs);
-                    int sendCount = 0;
-                    int i = 0;
-                    while (i < bs.length) {
-                        if (i + 1 == bs.length) {
-                            inputSystemManager.sendData(mainBoardMac, MainBoardCommand.makeWriteData
-                                    ((byte) (sendCount / 256), (byte) (sendCount % 256),
-                                            bs[i], (byte) 0));
-                            Log.d(TAG, "LLLLLLL  data=" + (byte) (sendCount / 256) + "  "
-                                    + (byte) (sendCount % 256) + "  " + bs[i] + "  " + 0);
-                        } else {
-                            inputSystemManager.sendData(mainBoardMac, MainBoardCommand
-                                    .makeWriteData(
-                                            (byte) (sendCount / 256), (byte) (sendCount %
-                                                    256), bs[i], bs[i + 1]));
-                            Log.d(TAG, "LLLLLLL  data=" + (byte) (sendCount / 256) + "  "
-                                    + (byte) (sendCount % 256) + "  " + bs[i] + "  " + bs[i + 1]);
-                        }
-                        i++;
-                        i++;
-                        sendCount++;
-                        SystemClock.sleep(50);
-                    }
-                    bis.close();
-                    input.close();
-                }
+            {
+                isRunableRunning = true;
+                try {
+                    InputStream input = getResources().getAssets().open(appAddrpName);
+                    BufferedInputStream bis = new BufferedInputStream(input);
+                    if (bis != null) {
+                        sendCount = 0;
+                        startTime = System.currentTimeMillis();
+                        sendCount = 0;
+                        byte[] tempbytes = new byte[2];
+                        int byteread = 0;
+                        // 读入多个字节到字节数组中，byteread为一次读入的字节数
+                        while ((byteread = bis.read(tempbytes)) != -1) {
+                            if (byteread == 1) {
+                                inputSystemManager.sendData(mainBoardMac, MainBoardCommand
+                                        .makeWriteData
 
-            } catch (Exception e) {
-                e.printStackTrace();
+                                                ((byte) (sendCount / 256), (byte) (sendCount % 256),
+                                                        tempbytes[0], (byte) 0));
+                                Log.d(TAG, byteread + " 发送数据  data=" + (byte) (sendCount / 256) +
+                                        "  "
+                                        + (byte) (sendCount % 256) + "  " + tempbytes[0] + "  " +
+                                        0);
+                            } else {
+                                inputSystemManager.sendData(mainBoardMac, MainBoardCommand
+                                        .makeWriteData(
+                                                (byte) (sendCount / 256), (byte) (sendCount %
+                                                        256), tempbytes[0], tempbytes[1]));
+                                Log.d(TAG, byteread + "发送数据  data=" + (byte) (sendCount / 256) +
+                                        "  " + (byte) (sendCount % 256) + "  " + tempbytes[0] + "" +
+                                        "  " + tempbytes[1]);
+                            }
+                            sendCount++;
+                            //TODO  等待
+                            synchronized (MainActivity.class) {
+                                waiting = true;
+                                MainActivity.class.wait();
+                            }
+//                            Thread.sleep();
+                        }
+                        bis.close();
+                        input.close();
+                    }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                isRunableRunning = false;
             }
-            isRunableRunning = false;
         }
     };
 
     /**
      * 心率计数据
+     *
      * @param key
      * @param value
      */
@@ -422,7 +541,8 @@ public class MainActivity extends AppCompatActivity implements InputSystemManage
 //                        } else if (value == SmctConstant.VALUE_BLE_DISCONNECTED) {// 1  断开
 //                            Toast.makeText(MainActivity.this, "蓝牙连接失败！！！", Toast.LENGTH_SHORT)
 //                                    .show();
-//                        } else if (value == SmctConstant.VALUE_BLE_SERVICE_DISCOVERED) {// 2   发现服务
+//                        } else if (value == SmctConstant.VALUE_BLE_SERVICE_DISCOVERED) {// 2
+// 发现服务
 //                            Toast.makeText(MainActivity.this, "发现蓝牙服务！！！", Toast.LENGTH_SHORT)
 //                                    .show();
 //                        } else if (value == SmctConstant.VALUE_BLE_DATA_AVAILABLE) {// 3  发现数据
@@ -437,7 +557,7 @@ public class MainActivity extends AppCompatActivity implements InputSystemManage
                         System.out.println(TAG + "bleData电量：" + value + "%");
                         break;
                     case SmctConstant.KEY_HEARTRATE_FROM_DEVICE://49
-                        System.out.println(TAG + "bleData心率：" + value );
+                        System.out.println(TAG + "bleData心率：" + value);
                         break;
 //					case SmctConstant.KEY_BODY_POSE:
 //						break;

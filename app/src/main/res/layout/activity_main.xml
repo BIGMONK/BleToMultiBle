@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+              xmlns:tools="http://schemas.android.com/tools"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical">
 
     <ScrollView
         android:layout_width="match_parent"
@@ -24,7 +24,7 @@
                     android:id="@+id/edittext_data"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="输入数据" />
+                    android:hint="输入数据"/>
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -34,12 +34,12 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="待发数据：" />
+                        android:text="待发数据："/>
 
                     <TextView
                         android:id="@+id/text_ready_data"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content" />
+                        android:layout_height="wrap_content"/>
                 </LinearLayout>
 
                 <LinearLayout
@@ -51,96 +51,145 @@
                         android:id="@+id/btn_add_data"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="添加" />
+                        android:text="添加"/>
 
                     <Button
                         android:id="@+id/btn_clear_data"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="清除" />
+                        android:text="清除"/>
 
                     <Button
                         android:id="@+id/btn_send_data"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="发送" />
+                        android:text="发送"/>
                 </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
-                <!--1 开始固件升级-->
-                <!--0xAA 0xAB 0xAC 0xAD 0xAE 0xAF 0x00 0x00 0x55-->
-                <Button
-                    android:id="@+id/btn_start_update"
+                android:orientation="horizontal">
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="开始固件升级" />
-                <!--9 获取硬件版本号-->
-                <!--0xAA 0x82 0x00 0x00 0x00 0x00 0x00 0x00 0x55-->
-                <Button
-                    android:id="@+id/btn_get_hard_version"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="获取硬件版本号" />
-                <!--8 获取软件版本号-->
-                <!--0xAA 0x81 0x00 0x00 0x00 0x00 0x00 0x00 0x55-->
-                <Button
-                    android:id="@+id/btn_get_soft_version"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="获取软件版本号" />
-                <!--2 设置软件版本号-->
-                <!--0xAA 0x11 0x00 0x00 0x00 0x00 0x00 0x00 0x55 （软件版本号，高位在前，低位在后）-->
-                <Button
-                    android:id="@+id/btn_set_soft_version"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="设置软件版本号" />
-                <!--3 设置硬件版本号-->
-                <!--0xAA 0x12 0x00 0x00 0x00 0x00 0x00 0x00 0x55 （硬件版本号，高位在前，低位在后）-->
-                <Button
-                    android:id="@+id/btn_set_hard_version"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="设置硬件版本号" />
-                <!--4 app_addr-->
-                <!--0xAA 0x13 0x00 0x00 0x00 0x00 0x00 0x00 0x55 （app_addr（0x3400或者0x9800）高位在前，低位在后）-->
-                <Button
-                    android:id="@+id/btn_set_app_addr"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="设置app_addr" />
-                <!--5 文件长度-->
-                <!--0xAA 0x14 0x00 0x00 0x00 0x00 0x00 0x00 0x55 （文件长度，字节数/2，高位在前，低位在后）-->
-                <Button
-                    android:id="@+id/btn_set_file_length"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="设置文件长度" />
-                <!--6 data-->
-                <!--0xAA 0x21 0x00 0x00 0x00 0x00 0x00 0x00 0x55 （包序号，高位在前，低位在后）（data，高位在前，低位在后）-->
-                <Button
-                    android:id="@+id/btn_set_data"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="设置data" />
+                    android:orientation="vertical">
 
-                <!--7 强制复位-->
-                <!--0xAA 0xFA 0xFB 0xFC 0xFD 0xFE 0x00 0x00 0x55-->
-                <Button
-                    android:id="@+id/btn_reset"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="强制复位" />
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <!--1 开始固件升级-->
+                        <!--0xAA 0xAB 0xAC 0xAD 0xAE 0xAF 0x00 0x00 0x55-->
+                        <Button
+                            android:id="@+id/btn_select"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="选择固件"
+                            android:textAllCaps="false"/>
+                        <Button
+                            android:id="@+id/btn_start_update"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="开始固件升级"/>
+                    </LinearLayout>
 
-                <TextView
-                    android:id="@+id/text_receive_after_send"
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <!--9 获取硬件版本号-->
+                        <!--0xAA 0x82 0x00 0x00 0x00 0x00 0x00 0x00 0x55-->
+                        <Button
+                            android:id="@+id/btn_get_hard_version"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="获取硬件版本号"/>
+                        <!--8 获取软件版本号-->
+                        <!--0xAA 0x81 0x00 0x00 0x00 0x00 0x00 0x00 0x55-->
+                        <Button
+                            android:id="@+id/btn_get_soft_version"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="获取软件版本号"/>
+                    </LinearLayout>
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <!--3 设置硬件版本号-->
+                        <!--0xAA 0x12 0x00 0x00 0x00 0x00 0x00 0x00 0x55 （硬件版本号，高位在前，低位在后）-->
+                        <Button
+                            android:id="@+id/btn_set_hard_version"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="设置硬件版本号"/>
+                        <!--2 设置软件版本号-->
+                        <!--0xAA 0x11 0x00 0x00 0x00 0x00 0x00 0x00 0x55 （软件版本号，高位在前，低位在后）-->
+                        <Button
+                            android:id="@+id/btn_set_soft_version"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="设置软件版本号"/>
+                    </LinearLayout>
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <!--4 app_addr-->
+                        <!--0xAA 0x13 0x00 0x00 0x00 0x00 0x00 0x00 0x55 （app_addr（0x3400或者0x9800）高位在前，低位在后）-->
+                        <Button
+                            android:id="@+id/btn_set_app_addr"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="设置app_addr"/>
+                        <!--5 文件长度-->
+                        <!--0xAA 0x14 0x00 0x00 0x00 0x00 0x00 0x00 0x55 （文件长度，字节数/2，高位在前，低位在后）-->
+                        <Button
+                            android:id="@+id/btn_set_file_length"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="设置发送次数"/>
+                        <TextView
+                            android:id="@+id/progress"
+                            android:text="0"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"/>
+                    </LinearLayout>
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <!--6 data-->
+                        <!--0xAA 0x21 0x00 0x00 0x00 0x00 0x00 0x00 0x55 （包序号，高位在前，低位在后）（data，高位在前，低位在后）-->
+                        <Button
+                            android:id="@+id/btn_set_data"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="发送程序包"/>
+
+                        <!--7 强制复位-->
+                        <!--0xAA 0xFA 0xFB 0xFC 0xFD 0xFE 0x00 0x00 0x55-->
+                        <Button
+                            android:id="@+id/btn_reset"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="强制复位"/>
+                    </LinearLayout>
+
+
+                    <TextView
+                        android:id="@+id/text_receive_after_send"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="wait"/>
+
+                </LinearLayout>
+                <youtu.bletomultible.PickerView
+                    android:id="@+id/picker"
                     android:layout_width="match_parent"
-                    android:text="wait"
-                    android:layout_height="wrap_content" />
+                    android:layout_height="match_parent"/>
 
             </LinearLayout>
 
@@ -148,7 +197,8 @@
             <android.support.v7.widget.RecyclerView
                 android:id="@+id/devicesList"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"></android.support.v7.widget.RecyclerView>
+                android:layout_height="match_parent">
+            </android.support.v7.widget.RecyclerView>
 
 
         </LinearLayout>
