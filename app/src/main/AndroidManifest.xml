@@ -29,6 +29,13 @@
             </intent-filter>
         </activity>
         <activity android:name=".MainActivity"/>
+
+        <service
+            android:name="cc.bodyplus.sdk.ble.manger.BleService"
+            android:exported="true" />
+        <service
+            android:name="cc.bodyplus.sdk.ble.ota.OTAService"
+            android:enabled="true" />
     </application>
 
 </manifest>

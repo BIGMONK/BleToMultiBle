@@ -153,9 +153,9 @@
                             android:text="设置发送次数"/>
                         <TextView
                             android:id="@+id/progress"
-                            android:text="0"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"/>
+                            android:layout_height="wrap_content"
+                            android:text="0"/>
                     </LinearLayout>
                     <LinearLayout
                         android:layout_width="wrap_content"
@@ -176,6 +176,17 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="强制复位"/>
+                        <Button
+                            android:id="@+id/btn_body"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="连接心率衣服"/>
+                        <Button
+                            android:id="@+id/btn_body_disconnect"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="断开心率衣服"/>
+
                     </LinearLayout>
 
 

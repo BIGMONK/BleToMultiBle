@@ -9,9 +9,11 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Message;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,10 +28,22 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
+import cc.bodyplus.sdk.ble.manger.BleConnectionInterface;
+import cc.bodyplus.sdk.ble.manger.BleConnectionManger;
+import cc.bodyplus.sdk.ble.utils.BleUtils;
+import cc.bodyplus.sdk.ble.utils.DeviceInfo;
+import cc.bodyplus.sdk.ble.utils.MyBleDevice;
+import youtu.bletomultible.utils.LogUtils;
+import youtu.bletomultible.utils.UTBleUtils;
 
-public class BleScanActivity extends AppCompatActivity {
+import static cc.bodyplus.sdk.ble.manger.BleService.RE_BOND_DEVICE;
+import static cc.bodyplus.sdk.ble.manger.BleService.RE_SCAN_DEVICE;
+
+
+public class BleScanActivity extends AppCompatActivity implements BleConnectionInterface {
     private static final int REQUEST_ENABLE_BT = 1;
 
     private ListView deviceList;
@@ -39,39 +53,61 @@ public class BleScanActivity extends AppCompatActivity {
     protected boolean isScanning;
     protected BluetoothAdapter mBluetoothAdapter;
     private String TAG = this.getClass().getSimpleName();
-    private HashMap<String,BluetoothDevice> hashMap=new HashMap<>();
+    private HashMap<String, BluetoothDevice> hashMap = new HashMap<>();
     // Device scan callback.
     private BluetoothAdapter.LeScanCallback mLeScanCallback = new BluetoothAdapter.LeScanCallback
             () {
         @Override
-        public void onLeScan(final BluetoothDevice device, final int rssi, final byte[] scanRecord) {
-                if (!hashMap.containsKey(device.getAddress())){
-                    hashMap.put(device.getAddress(),device);
-                    StringBuilder sb = new StringBuilder();
-                    if (scanRecord == null) {
-                        sb.append("null");
-                    } else if (scanRecord.length == 0) {
-                        sb.append("empty");
-                    } else {
-                        sb.append(device.getName()+"  "+device.getAddress()+"  scanRecord长度："+scanRecord.length+"  内容：");
-                        for (byte b : scanRecord) {
-                            sb.append(b+" ");
-                        }
+        public void onLeScan(final BluetoothDevice device, final int rssi, final byte[]
+                scanRecord) {
+            if (!hashMap.containsKey(device.getAddress())) {
+                hashMap.put(device.getAddress(), device);
+                StringBuilder sb = new StringBuilder();
+                if (scanRecord == null) {
+                    sb.append("null");
+                } else if (scanRecord.length == 0) {
+                    sb.append("empty");
+                } else {
+                    sb.append(device.getName() + "  " + device.getAddress() + "  scanRecord长度：" +
+                            scanRecord.length + "  内容：");
+                    for (byte b : scanRecord) {
+                        sb.append(b + " ");
                     }
-                    System.out.println("LLLLLLLLLL:"+device.getAddress()+"  "+parseData(scanRecord).toString()+"\n"+sb.toString());
                 }
 
-                Log.d(TAG, "LeScanCallback:  Name:" + device.getName()
-                        + "\nMAC:" + device.getAddress()
-                );
+                LogUtils.d(TAG,"解析发现设备"+device.getName()+"  "+device.getAddress()+"  ");
+                //BleUtils bodyplus SDK工具类
+                List<UUID> uuids = UTBleUtils.parseUuids(scanRecord);
+                for (int i = 0; i <uuids.size() ; i++) {
+                    LogUtils.d(TAG,"解析设备UUID"+device.getName()+"  "+uuids.get(i).toString());
+                }
+//                if (UTBleUtils.isFilterMyUUID(scanRecord)) {
+                SparseArray<byte[]> recodeArray = UTBleUtils.parseFromBytes(scanRecord);
+                for (int i = 0; i < recodeArray.size(); i++) {
+                    int key = recodeArray.keyAt(i);
+                    byte[] values = recodeArray.get(key);
+                    LogUtils.d(TAG, "解析设备广播包" + "name=" + device.getName() + "  mac=" + device
+                            .getAddress() + " i=" + i + "  key=" + key + "  values=" + BleUtils
+                            .byteToChar(values));
+                }
+
+                byte[] b = recodeArray.get(0xffff);
+                if (b != null && b.length > 0) {
+                    LogUtils.d(TAG, "解析设备号1：" + UTBleUtils.byteToChar(b)+"  "+UTBleUtils.isFilterMyUUID(scanRecord));
+                }
+//                }
+
+            }
+
+            Log.d(TAG, "LeScanCallback:  Name:" + device.getName()
+                    + "\nMAC:" + device.getAddress());
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     Bledevices leDevice = new Bledevices();
                     leDevice.device = device;
                     leDevice.singal = rssi;
-                    leDevice.scanRecord=scanRecord;
-//                	mlxh.add("" + rssi + "dbm");
+                    leDevice.scanRecord = scanRecord;
                     mLeDeviceListAdapter.addDevice(leDevice);
                     mLeDeviceListAdapter.notifyDataSetChanged();
                 }
@@ -113,7 +149,8 @@ public class BleScanActivity extends AppCompatActivity {
 
         deviceList = (ListView) findViewById(R.id.device_list);
         button = (Button) findViewById(R.id.button);
-
+        BleConnectionManger.getInstance().addConnectionListener(this, false); // 注册蓝牙监听心率衣服
+        BleConnectionManger.getInstance().autoConnectBle("2004020349");
         BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context
                 .BLUETOOTH_SERVICE);
         mBluetoothAdapter = bluetoothManager.getAdapter();
@@ -168,9 +205,10 @@ public class BleScanActivity extends AppCompatActivity {
 //                                        BleDeviceBean>();
 //                                map.put(add, bleDeviceBean);
 //                                intent.putExtra("deviceMap", map);
-                                intent.putExtra("address",add);
-                                intent.putExtra("name",bleDevice.device.getName()+"");
-                                intent.putExtra("type",which + 1);
+                                intent.putExtra("address", add);
+                                intent.putExtra("name", bleDevice.device.getName() + "");
+                                intent.putExtra("type", which + 1);
+                                intent.putExtra("scanRecord", bleDevice.scanRecord);
 
                                 startActivity(intent);
                                 dialog.dismiss(); // 让窗口消失
@@ -206,6 +244,7 @@ public class BleScanActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        BleConnectionManger.getInstance().removeConnectionListener(this); // 移除监听蓝牙心率衣服
         super.onDestroy();
         BleScanDevice(false);
     }
@@ -232,6 +271,67 @@ public class BleScanActivity extends AppCompatActivity {
         mLeDeviceListAdapter.clear();
     }
 
+
+    @Override
+    public void bleDispatchMessage(Message msg) {
+        switch (msg.what) {
+            case RE_SCAN_DEVICE:
+                ArrayList<MyBleDevice> myBleDevices = (ArrayList<MyBleDevice>) msg.obj;
+                for (int i = 0; i < myBleDevices.size(); i++) {
+                    Log.d(TAG, "BodyPlus bleDispatchMessage:搜索结果msg.what= " + msg.what
+                            + " myBleDevices.get(" + i + ")=" + "  DeviceName=" + myBleDevices
+                            .get(i).getDeviceName()
+                            + "  MacAddress=" + myBleDevices.get(i).getMacAddress()
+                            + "  DeviceSn=" + myBleDevices.get(i).getDeviceSn()
+                            + "  Rssi=" + myBleDevices.get(i).getRssi());
+                }
+                break;
+            case RE_BOND_DEVICE:
+                Toast.makeText(this, "连接成功！", Toast.LENGTH_LONG).show();
+                DeviceInfo deviceInfo = (DeviceInfo) msg.obj; // 这是由搜索连接得到的 DeviceInfo对象，该对象中有完整的信息
+                Log.d(TAG, "BodyPlus bleDispatchMessage:连接成功 msg.what= " + msg.what
+                        + "  deviceInfo: "
+                        + " DeviceName=" + deviceInfo.bleName
+                        + " 硬件版本=" + deviceInfo.hwVn
+                        + " 固件版本=" + deviceInfo.swVn
+                        + " 序列号=" + deviceInfo.sn);
+                break;
+        }
+    }
+
+    @Override
+    public void bleDataCallBack(int code, int dm) {
+        Log.d(TAG, "BodyPlus bleDataCallBack: code=" + code + "  dm=" + dm);
+    }
+
+    @Override
+    public void bleHeartDataError() {
+        Log.d(TAG, "BodyPlus bleHeartDataError: ");
+    }
+
+    @Override
+    public void blePowerLevel(byte data) {
+        Log.d(TAG, "BodyPlus blePowerLevel: " + data);
+    }
+
+    @Override
+    public void bleReConnectDevice(DeviceInfo device) {
+        DeviceInfo deviceInfo = device; // 这是由自动重连得到的
+        // DeviceInfo对象，该对象中没有硬件版本信息（重连的时候不需要读取硬件版本信息，可以从已绑定信息中获取）
+        Toast.makeText(this, "我是自动连接上的回调", Toast.LENGTH_LONG).show();
+        Log.d(TAG, "BodyPlus bleReConnectDevice: " + device.toString());
+    }
+
+    @Override
+    public void bleDeviceDisconnect() {
+        Toast.makeText(this, "我是断开连接的回调", Toast.LENGTH_LONG).show();
+        Log.d(TAG, "BodyPlus bleDeviceDisconnect: ");
+    }
+
+    @Override
+    public void bleCoreModule(byte data) {
+        Log.d(TAG, "BodyPlus bleCoreModule: " + data);
+    }
 
     // Adapter for holding devices found through scanning.
     private class LeDeviceListAdapter extends BaseAdapter {
@@ -306,41 +406,43 @@ public class BleScanActivity extends AppCompatActivity {
             viewHolder.deviceSignal.setText("" + bleDevice.singal + "dBm");
 
             StringBuilder sb = new StringBuilder();
-            byte[] scanRecord=bleDevice.scanRecord;
+            byte[] scanRecord = bleDevice.scanRecord;
             if (scanRecord == null) {
                 sb.append("null");
             } else if (scanRecord.length == 0) {
                 sb.append("empty");
             } else {
-                sb.append("scanRecord长度："+scanRecord.length+"  内容：");
+                sb.append("scanRecord长度：" + scanRecord.length + "  内容：");
                 for (byte b : scanRecord) {
-                    sb.append(b+" ");
+                    sb.append(b + " ");
                 }
             }
             viewHolder.scanRecord.setText(sb.toString());
             return view;
         }
     }
-   static class ParsedAd{
+
+    static class ParsedAd {
         byte flags;
-        ArrayList<UUID> uuids=null;
+        ArrayList<UUID> uuids = null;
         String localName;
         short manufacturer;
 
         public ParsedAd() {
-            uuids=new ArrayList<>();
+            uuids = new ArrayList<>();
         }
 
-       @Override
-       public String toString() {
-           return "ParsedAd{" +
-                   "flags=" + flags +
-                   ", uuids=" + uuids +
-                   ", localName='" + localName + '\'' +
-                   ", manufacturer=" + manufacturer +
-                   '}';
-       }
-   }
+        @Override
+        public String toString() {
+            return "ParsedAd{" +
+                    "flags=" + flags +
+                    ", uuids=" + uuids +
+                    ", localName='" + localName + '\'' +
+                    ", manufacturer=" + manufacturer +
+                    '}';
+        }
+    }
+
     public static ParsedAd parseData(byte[] adv_data) {
         ParsedAd parsedAd = new ParsedAd();
         ByteBuffer buffer = ByteBuffer.wrap(adv_data);
@@ -403,11 +505,13 @@ public class BleScanActivity extends AppCompatActivity {
         }
         return parsedAd;
     }
+
     class ViewHolder {
         TextView deviceName;
         TextView deviceAddress;
         TextView deviceSignal;
         TextView scanRecord;
+
         public ViewHolder(View view) {
             deviceAddress = (TextView) view.findViewById(R.id.device_address);
             deviceName = (TextView) view.findViewById(R.id.device_name);

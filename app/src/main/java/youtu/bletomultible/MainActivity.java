@@ -30,6 +30,11 @@ import java.util.TimeZone;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import cc.bodyplus.sdk.ble.manger.BleConnectionInterface;
+import cc.bodyplus.sdk.ble.manger.BleConnectionManger;
+import cc.bodyplus.sdk.ble.manger.BleService;
+import cc.bodyplus.sdk.ble.parse.BleCmdConfig;
+import cc.bodyplus.sdk.ble.utils.DeviceInfo;
 import youtu.bletomultible.bluetooth.BleDeviceAdapter;
 import youtu.bletomultible.bluetooth.BleDeviceBean;
 import youtu.bletomultible.bluetooth.InputSystemManager;
@@ -43,7 +48,8 @@ import youtu.bletomultible.utils.LogUtils;
 
 public class MainActivity extends AppCompatActivity implements InputSystemManager
         .BlueToothDataValuesChangedListener,
-        InputSystemManager.BlueToothConnectStateEvevtListener, IBleOperateCallback {
+        InputSystemManager.BlueToothConnectStateEvevtListener, IBleOperateCallback,
+        BleConnectionInterface {
     private HashMap<String, BleDeviceBean> devicesMap = new HashMap<>();
     private InputSystemManager inputSystemManager;
 
@@ -149,12 +155,17 @@ public class MainActivity extends AppCompatActivity implements InputSystemManage
             }
         });
 
+
+        BleConnectionManger.getInstance().addConnectionListener(this, true); // 注册蓝牙监听心率衣服
+
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         inputSystemManager.unRegisterBlueToothDataValuesChangedListener(this);
+        BleConnectionManger.getInstance().removeConnectionListener(this); // 移除监听
+
     }
 
     Message message;
@@ -246,9 +257,17 @@ public class MainActivity extends AppCompatActivity implements InputSystemManage
             R.id.btn_get_soft_version, R.id.btn_get_hard_version, R.id.btn_set_soft_version,
             R.id.btn_set_hard_version, R.id.btn_set_app_addr, R.id.btn_set_file_length,
             R.id.btn_set_data, R.id.btn_reset, R.id.btn_select
+            , R.id.btn_body
+            , R.id.btn_body_disconnect
     })
     public void Onclick(View view) {
         switch (view.getId()) {
+            case R.id.btn_body_disconnect:
+                BleConnectionManger.getInstance().disconnect();
+                break;
+            case R.id.btn_body:
+                BleConnectionManger.getInstance().autoConnectBle("2004020349");
+                break;
             case R.id.btn_add_data:
                 submit();
                 break;
@@ -474,7 +493,7 @@ public class MainActivity extends AppCompatActivity implements InputSystemManage
                     if (bis != null) {
                         sendCount = 0;
                         startTime = System.currentTimeMillis();
-                        sendCount = 0;
+                        sentCount = 0;
                         byte[] tempbytes = new byte[2];
                         int byteread = 0;
                         // 读入多个字节到字节数组中，byteread为一次读入的字节数
@@ -482,7 +501,6 @@ public class MainActivity extends AppCompatActivity implements InputSystemManage
                             if (byteread == 1) {
                                 inputSystemManager.sendData(mainBoardMac, MainBoardCommand
                                         .makeWriteData
-
                                                 ((byte) (sendCount / 256), (byte) (sendCount % 256),
                                                         tempbytes[0], (byte) 0));
                                 Log.d(TAG, byteread + " 发送数据  data=" + (byte) (sendCount / 256) +
@@ -499,6 +517,7 @@ public class MainActivity extends AppCompatActivity implements InputSystemManage
                                         "  " + tempbytes[1]);
                             }
                             sendCount++;
+                            Log.d(TAG, byteread + "发送数据  sendCount=" + sendCount);
                             //TODO  等待
                             synchronized (MainActivity.class) {
                                 waiting = true;
@@ -581,5 +600,70 @@ public class MainActivity extends AppCompatActivity implements InputSystemManage
     @Override
     public void bleData(int var1, byte[] var2) {
 
+    }
+
+
+    @Override
+    public void bleDispatchMessage(Message msg) {
+        switch (msg.what) {
+            case BleService.RE_BLE_WRITE_NAME_SUCCEED:
+                Toast.makeText(this, "我是修改名称的回调！", Toast.LENGTH_LONG).show();
+                break;
+        }
+        Log.d(TAG, "BodyPlus bleDispatchMessage: what=" + msg.what + "   obj=" + msg.toString());
+
+    }
+
+    @Override
+    public void bleDataCallBack(int code, int dm) {
+        // 心率数据的回调
+        if (code == BleCmdConfig.BLE_HEART_MESSAGE) {
+            Log.d(TAG, "BodyPlus bleDataCallBack: code=" + code + "心率  dm=" + dm);
+        } else {
+            Log.d(TAG, "BodyPlus bleDataCallBack: code=" + code + "  dm=" + dm);
+        }
+
+    }
+
+    @Override
+    public void bleHeartDataError() {
+        // 心率检测脱落的回调
+        Log.d(TAG, "BodyPlus bleHeartDataError: ");
+
+    }
+
+    @Override
+    public void blePowerLevel(byte data) {
+        // 电量的回调 范围0-100
+        Log.d(TAG, "BodyPlus bleHeartDataError: " + "电量：" + data);
+    }
+
+    @Override
+    public void bleReConnectDevice(DeviceInfo device) {
+        // 重连成功的回调
+        Log.d(TAG, "bleReConnectDevice: " + device.toString());
+    }
+
+    @Override
+    public void bleDeviceDisconnect() {
+        // 连接断开的回调
+        Log.d(TAG, "bleDeviceDisconnect: ");
+    }
+
+    @Override
+    public void bleCoreModule(byte data) {
+        // 位置状态的回调
+        switch (data) {
+            case 0x00: // 充电座
+                Log.d(TAG, "BodyPlus bleHeartDataError: " + "位置：充电");
+                break;
+            case 0x01: // 上衣
+                Log.d(TAG, "BodyPlus bleHeartDataError: " + "位置：服装");
+                break;
+            case 0x11: // 独立
+                Log.d(TAG, "BodyPlus bleHeartDataError: " + "位置：独立");
+                break;
+        }
+        Log.d(TAG, "bleCoreModule: " + data);
     }
 }

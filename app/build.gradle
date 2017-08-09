@@ -29,4 +29,5 @@ dependencies {
     compile 'com.android.support:recyclerview-v7:25.2.0'
     compile 'com.jakewharton:butterknife:8.5.1'
     compile 'com.jakewharton:butterknife-compiler:8.5.1'
+    compile files('libs/BodyPlusSdk_V1.0.1.jar')
 }
