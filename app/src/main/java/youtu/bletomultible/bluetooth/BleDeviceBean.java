@@ -62,6 +62,10 @@ public class BleDeviceBean implements Serializable {
             this.serviceUUID = SampleGattAttributes.HRM_SERVICE_UUID;
             this.notifyUUID = SampleGattAttributes.HRM_RECEIVE_UUID;
             this.sendUUID = SampleGattAttributes.HRM_SEND_UUID;
+        }else if (type == SampleGattAttributes.NEW_BLE_MAINBOARD) {//计步器
+            this.serviceUUID = SampleGattAttributes.NEW_BLE_MAINBOARD_SERVICE_UUID;
+            this.notifyUUID = SampleGattAttributes.NEW_BLE_MAINBOARD_RECEIVE_UUID;
+            this.sendUUID = SampleGattAttributes.HAND_BAND_SEND_UUID;
         }
     }
 

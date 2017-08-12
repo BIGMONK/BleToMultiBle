@@ -1,6 +1,7 @@
 package youtu.bletomultible.bluetooth;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,33 +21,29 @@ public class BleDeviceAdapter extends RecyclerView.Adapter<BleDeviceAdapterHolde
 
     private Context mContext;
     private HashMap<String, BleDeviceBean> datas;
-    private List< BleDeviceBean> list;
+    private List<BleDeviceBean> list;
 
-    public BleDeviceAdapter(Context mContext, HashMap<String,  BleDeviceBean> datas) {
+    public BleDeviceAdapter(Context mContext, HashMap<String, BleDeviceBean> datas) {
         this.mContext = mContext;
         this.datas = datas;
         list = new ArrayList<>();
         for (String add : datas.keySet()) {
             list.add(datas.get(add));
         }
-
-        System.out.println(
-                "LLLLLLLLLL   " + list.size()
-        );
     }
 
     @Override
-    public  BleDeviceAdapterHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public BleDeviceAdapterHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(mContext).inflate(R.layout.item_device, parent, false);
-         BleDeviceAdapterHolder holder = new  BleDeviceAdapterHolder(view);
+        BleDeviceAdapterHolder holder = new BleDeviceAdapterHolder(view);
         return holder;
     }
 
     @Override
-    public void onBindViewHolder( BleDeviceAdapterHolder holder, int position) {
+    public void onBindViewHolder(BleDeviceAdapterHolder holder, int position) {
 
-        holder.name.setText("name:"+list.get(position).getName());
-        holder.mac.setText("mac:"+list.get(position).getMac());
+        holder.name.setText("name:" + list.get(position).getName());
+        holder.mac.setText("mac:" + list.get(position).getMac());
         switch (list.get(position).getType()) {
             case 1:
                 holder.type.setText("手环");
@@ -62,13 +59,18 @@ public class BleDeviceAdapter extends RecyclerView.Adapter<BleDeviceAdapterHolde
 
                 break;
         }
-        holder.serviceUUID.setText("serviceUUID:"+list.get(position).getSendUUID().toString());
-        holder.notifyUUID.setText("notifyUUID:"+list.get(position).getNotifyUUID().toString());
-        holder.configUUID.setText("configUUID:"+list.get(position).getConfigUUID().toString());
-        holder.sendUUID.setText("sendUUID:"+list.get(position).getSendUUID().toString());
-        holder.values.setText("values:"+list.get(position).getValues());
-        holder.state.setText("state:"+list.get(position).getState()+"");
+        holder.serviceUUID.setText("serviceUUID:" + list.get(position).getServiceUUID().toString());
+        holder.notifyUUID.setText("notifyUUID:" + list.get(position).getNotifyUUID().toString());
+        holder.configUUID.setText("configUUID:" + list.get(position).getConfigUUID().toString());
+        holder.sendUUID.setText("sendUUID:" + list.get(position).getSendUUID().toString());
+        holder.state.setText("state:" + list.get(position).getState() + "");
+        holder.values.setText("values:" + list.get(position).getValues());
+        holder.values.setTextColor(color[(colorIndex % color.length)]);
+        colorIndex++;
     }
+
+    int colorIndex;
+    int[] color = {Color.RED, Color.YELLOW, Color.BLUE, Color.GREEN, Color.BLACK};
 
     @Override
     public int getItemCount() {

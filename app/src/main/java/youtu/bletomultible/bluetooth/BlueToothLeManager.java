@@ -350,6 +350,10 @@ public class BlueToothLeManager extends Thread implements
                     + bleDevice.getServiceUUID().toString()
             );
             BluetoothGattService mGattService = gatt.getService(bleDevice.getServiceUUID());
+
+            for (int i = 0; i < gatt.getServices().size(); i++) {
+                LogUtils.d(TAG, "LLLLLL服务的uuid="+i+"  " + gatt.getServices().get(i).getUuid());
+            }
             if (mGattService != null) {
                 LogUtils.d(TAG, "onDiscovered mGattService != null");
                 BluetoothGattCharacteristic mBluetoothGattCharacteristic = mGattService

@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Message;
+import android.os.ParcelUuid;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -32,10 +33,10 @@ import java.util.List;
 import java.util.UUID;
 
 import cc.bodyplus.sdk.ble.manger.BleConnectionInterface;
-import cc.bodyplus.sdk.ble.manger.BleConnectionManger;
 import cc.bodyplus.sdk.ble.utils.BleUtils;
 import cc.bodyplus.sdk.ble.utils.DeviceInfo;
 import cc.bodyplus.sdk.ble.utils.MyBleDevice;
+import youtu.bletomultible.bluetooth.SampleGattAttributes;
 import youtu.bletomultible.utils.LogUtils;
 import youtu.bletomultible.utils.UTBleUtils;
 
@@ -75,26 +76,35 @@ public class BleScanActivity extends AppCompatActivity implements BleConnectionI
                     }
                 }
 
-                LogUtils.d(TAG,"解析发现设备"+device.getName()+"  "+device.getAddress()+"  ");
+                LogUtils.d(TAG, "发现解析设备：" + device.getName() + "  " + device.getAddress() + "  ");
+                ParcelUuid[] us = device.getUuids();
+                if (us != null)
+                    for (int i = 0; i < us.length; i++) {
+                        LogUtils.d(TAG, "解析设备自带UUID：" + us[i].toString());
+
+                    }
                 //BleUtils bodyplus SDK工具类
                 List<UUID> uuids = UTBleUtils.parseUuids(scanRecord);
-                for (int i = 0; i <uuids.size() ; i++) {
-                    LogUtils.d(TAG,"解析设备UUID"+device.getName()+"  "+uuids.get(i).toString());
+                for (int i = 0; i < uuids.size(); i++) {
+                    LogUtils.d(TAG, "工具解析设备:" + device.getName()
+                            + "  UUID：" + i + "  " + uuids.get(i).toString());
                 }
 //                if (UTBleUtils.isFilterMyUUID(scanRecord)) {
                 SparseArray<byte[]> recodeArray = UTBleUtils.parseFromBytes(scanRecord);
                 for (int i = 0; i < recodeArray.size(); i++) {
                     int key = recodeArray.keyAt(i);
                     byte[] values = recodeArray.get(key);
-                    LogUtils.d(TAG, "解析设备广播包" + "name=" + device.getName() + "  mac=" + device
-                            .getAddress() + " i=" + i + "  key=" + key + "  values=" + BleUtils
+                    LogUtils.d(TAG, "工具解析设备:" + device.getName()
+                            + "广播包数据 i=" + i + "  key=" + key + "  values=" + BleUtils
                             .byteToChar(values));
                 }
 
                 byte[] b = recodeArray.get(0xffff);
                 if (b != null && b.length > 0) {
-                    LogUtils.d(TAG, "解析设备号1：" + UTBleUtils.byteToChar(b)+"  "+UTBleUtils.isFilterMyUUID(scanRecord));
+                    LogUtils.d(TAG, "解析设备号1：" + UTBleUtils.byteToChar(b) + "  " + UTBleUtils
+                            .isFilterMyUUID(scanRecord));
                 }
+                Log.e(TAG, "--------------------------------");
 //                }
 
             }
@@ -149,8 +159,10 @@ public class BleScanActivity extends AppCompatActivity implements BleConnectionI
 
         deviceList = (ListView) findViewById(R.id.device_list);
         button = (Button) findViewById(R.id.button);
-        BleConnectionManger.getInstance().addConnectionListener(this, false); // 注册蓝牙监听心率衣服
-        BleConnectionManger.getInstance().autoConnectBle("2004020349");
+
+//        BleConnectionManger.getInstance().addConnectionListener(this, false); // 注册蓝牙监听心率衣服
+//        BleConnectionManger.getInstance().autoConnectBle("2004020349");
+
         BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context
                 .BLUETOOTH_SERVICE);
         mBluetoothAdapter = bluetoothManager.getAdapter();
@@ -191,26 +203,37 @@ public class BleScanActivity extends AppCompatActivity implements BleConnectionI
                 AlertDialog.Builder builder = new AlertDialog.Builder(BleScanActivity.this);
 
                 builder.setTitle("蓝牙设备类型选择：");//1  手环   2  主控板   3 计步器   4  三角心率计
-                String[] choice = new String[]{"手环", "主控板", "计步器", "心率计"};
+                String[] choice = new String[]{SampleGattAttributes.HAND_BAND_NAME
+                        , SampleGattAttributes.MAINBOARD_NAME
+                        , SampleGattAttributes.STEPER_NAME
+                        , SampleGattAttributes.HRM_NAME
+                        , SampleGattAttributes.NEW_BLE_MAINBOARD_NAME
+                };
+                final int[] choiceType = {SampleGattAttributes.HAND_BAND
+                        , SampleGattAttributes.MAINBOARD
+                        , SampleGattAttributes.STEPER
+                        , SampleGattAttributes.HRM
+                        , SampleGattAttributes.NEW_BLE_MAINBOARD//新主控板和计步器一样
+                };
                 builder.setSingleChoiceItems(choice, 0,
                         new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                Intent intent = new Intent(BleScanActivity.this, MainActivity
-                                        .class);
-
-//                                BleDeviceBean bleDeviceBean = new BleDeviceBean(bleDevice.device
-//                                        .getName() + "", add, which + 1);
-//                                HashMap<String, BleDeviceBean> map = new HashMap<String,
-//                                        BleDeviceBean>();
-//                                map.put(add, bleDeviceBean);
-//                                intent.putExtra("deviceMap", map);
-                                intent.putExtra("address", add);
-                                intent.putExtra("name", bleDevice.device.getName() + "");
-                                intent.putExtra("type", which + 1);
-                                intent.putExtra("scanRecord", bleDevice.scanRecord);
-
-                                startActivity(intent);
+                                Intent intent = null;
+                                if (choiceType[which] == SampleGattAttributes.NEW_BLE_MAINBOARD) {
+                                    intent = new Intent(BleScanActivity.this, WifiMainBoardBleTest
+                                            .class);
+                                } else if (choiceType[which] == SampleGattAttributes.MAINBOARD) {
+                                    intent = new Intent(BleScanActivity.this, MainActivity
+                                            .class);
+                                }
+                                if (intent != null) {
+                                    intent.putExtra("address", add);
+                                    intent.putExtra("name", bleDevice.device.getName() + "");
+                                    intent.putExtra("type", choiceType[which]);
+                                    intent.putExtra("scanRecord", bleDevice.scanRecord);
+                                    startActivity(intent);
+                                }
                                 dialog.dismiss(); // 让窗口消失
                             }
                         }
@@ -244,7 +267,7 @@ public class BleScanActivity extends AppCompatActivity implements BleConnectionI
 
     @Override
     protected void onDestroy() {
-        BleConnectionManger.getInstance().removeConnectionListener(this); // 移除监听蓝牙心率衣服
+//        BleConnectionManger.getInstance().removeConnectionListener(this); // 移除监听蓝牙心率衣服
         super.onDestroy();
         BleScanDevice(false);
     }

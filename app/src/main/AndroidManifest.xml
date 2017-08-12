@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="youtu.bletomultible">
+
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
@@ -14,6 +15,7 @@
     <uses-permission android:name="android.permission.GET_TASKS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.WRITE_SETTINGS"/>
+
     <application
         android:name=".MyApplication"
         android:allowBackup="true"
@@ -32,10 +34,13 @@
 
         <service
             android:name="cc.bodyplus.sdk.ble.manger.BleService"
-            android:exported="true" />
+            android:exported="true"/>
         <service
             android:name="cc.bodyplus.sdk.ble.ota.OTAService"
-            android:enabled="true" />
+            android:enabled="true"/>
+
+        <activity android:name=".WifiMainBoardBleTest">
+        </activity>
     </application>
 
 </manifest>

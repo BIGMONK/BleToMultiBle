@@ -282,7 +282,10 @@ public class BluetoothLeTool implements BluetoothStatus {
     }
 
     public synchronized void writeCharacteristic(String add, BluetoothGattCharacteristic characteristic) {
-        LogUtils.d(TAG,"writeCharacteristic  add="+add);
+        LogUtils.d(TAG,"writeCharacteristic  add="+add +"数据:"+characteristic.getValue().toString()
+                +"服务UUID："+characteristic.getService().getUuid().toString()
+                +"写通道UUID： "+characteristic.getUuid().toString()
+        );
         if (mBluetoothAdapter == null || mBluetoothGattMap.get(add) == null) {
             Log.w(TAG, "BluetoothAdapter not initialized  " + add);
             return;
